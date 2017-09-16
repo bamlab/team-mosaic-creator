@@ -14,36 +14,41 @@ if (!$files) {
     throw new Exception('Missing files in team images folder');
 }
 
-$inputImageSize = 300;
+$inputImageSize = 256;
 $images = [];
 foreach ($files as $file) {
     $path = $imagesFolder.'/'.$file;
     $ext = pathinfo($path, PATHINFO_EXTENSION);
     if ($ext !== 'jpg' && $ext !== 'jpeg' && $ext !== 'png') continue;
 
-    echo 'Loading '.$file.PHP_EOL;
+    echo 'Loading '.$file;
     $imageSize = getimagesize($path);
     if ($imageSize[0] !== $imageSize[1]) {
         throw new Exception($file.' is not a square image. Please crop it.');
     }
 
     if ($imageSize[0] !== $inputImageSize) {
-        throw new Exception('Automatic resizing to the smallest image size is not yet done, so you need to resize '.$file.' to '.$inputImageSize.'x'.$inputImageSize.'px.');
+        echo ' (resized)';
     }
 
-    $ressource = null;
+    $resource = null;
     if ($ext === 'jpg' || $ext === 'jpeg') {
-        $ressource = imagecreatefromjpeg($path);
+        $resource = imagecreatefromjpeg($path);
     } elseif ($ext === 'png') {
-        $ressource = imageCreateFromPNG($path);
+        $resource = imageCreateFromPNG($path);
     }
 
-    if ($ressource !== null) {
-        $images[] = [
-            'ressource' => $ressource,
-            'occurences' => 0,
-        ];
+    if ($resource === null) {
+        throw new Exception('Error loading '.$file);
     }
+
+    $images[] = [
+        'resource' => $resource,
+        'size' => $imageSize[0],
+        'occurences' => 0,
+    ];
+
+    echo PHP_EOL;
 }
 
 $nbInputImages = count($images);
@@ -89,7 +94,7 @@ function getRandomImage($images, $nbInputImages, $nbOccurencesPerImage, $map, $i
         }
     }
 
-    return [$randomImage['ressource'], $randomImageIndex];
+    return [$randomImage, $randomImageIndex];
 }
 
 for($j = 0; $j < $nbHeight; $j++) {
@@ -97,8 +102,8 @@ for($j = 0; $j < $nbHeight; $j++) {
         $x = $i*$inputImageSize;
         $y = $j*$inputImageSize;
 
-        [$randomImageResource, $randomImageIndex] = getRandomImage($images, $nbInputImages, $nbOccurencesPerImage, $map, $i, $j);
-        imagecopymerge($resultImage, $randomImageResource, $x, $y, 0, 0, $inputImageSize, $inputImageSize, 100);
+        [$randomImage, $randomImageIndex] = getRandomImage($images, $nbInputImages, $nbOccurencesPerImage, $map, $i, $j);
+        imagecopyresized($resultImage, $randomImage['resource'], $x, $y, 0, 0, $inputImageSize, $inputImageSize, $randomImage['size'], $randomImage['size']);
         $images[$randomImageIndex]['occurences']++;
         $map[$i][$j] = $randomImageIndex;
     }
@@ -106,10 +111,10 @@ for($j = 0; $j < $nbHeight; $j++) {
 
 echo 'Saving...'.PHP_EOL;
 
-imagepng($resultImage, './banner2.png');
+imagepng($resultImage, './banner.png');
 
 foreach ($images as $image) {
-    ImageDestroy($image['ressource']);
+    ImageDestroy($image['resource']);
 }
 ImageDestroy($resultImage);
 

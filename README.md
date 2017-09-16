@@ -5,7 +5,7 @@ Generate a banner image from multiple square images.
 ## Requirements
 
 - PHP 7.1+
-- Images of 300x300px (JPG or PNG)
+- Square images (JPG or PNG), minimum 256x256px is recommended
 
 ## Usage
 
