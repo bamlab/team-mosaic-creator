@@ -65,33 +65,48 @@ $nbHeight = ceil($outputImageHeight / $inputImageSize);
 $nbOccurencesPerImage = $nbWidth * $nbHeight / $nbInputImages;
 $lastImageIndex = -1;
 
-function getRandomImage($images, $nbInputImages, $nbOccurencesPerImage, $lastImageIndex) {
+$map = [[]];
+
+function getRandomImage($images, $nbInputImages, $nbOccurencesPerImage, $map, $i, $j) {
     $randomImageIndex = mt_rand(0, $nbInputImages - 1);
     $randomImage = $images[$randomImageIndex];
 
-    if ($randomImage['occurences'] > $nbOccurencesPerImage || $lastImageIndex == $randomImageIndex) {
-        return getRandomImage($images, $nbInputImages, $nbOccurencesPerImage, $lastImageIndex);
+    if ($randomImage['occurences'] > $nbOccurencesPerImage) {
+        return getRandomImage($images, $nbInputImages, $nbOccurencesPerImage, $map, $i, $j);
+    }
+
+    // check for horizontal repeating
+    for ($ii = 0; $ii < $i; $ii++) {
+        if ($map[$ii][$j] === $randomImageIndex) {
+            return getRandomImage($images, $nbInputImages, $nbOccurencesPerImage, $map, $i, $j);
+        }
+    }
+
+    // check for vertical repeating
+    for ($jj = 0; $jj < $j; $jj++) {
+        if ($map[$i][$jj] === $randomImageIndex) {
+            return getRandomImage($images, $nbInputImages, $nbOccurencesPerImage, $map, $i, $j);
+        }
     }
 
     return [$randomImage['ressource'], $randomImageIndex];
 }
-
 
 for($j = 0; $j < $nbHeight; $j++) {
     for ($i = 0; $i < $nbWidth; $i++) {
         $x = $i*$inputImageSize;
         $y = $j*$inputImageSize;
 
-        [$randomImageResource, $randomImageIndex] = getRandomImage($images, $nbInputImages, $nbOccurencesPerImage, $lastImageIndex);
+        [$randomImageResource, $randomImageIndex] = getRandomImage($images, $nbInputImages, $nbOccurencesPerImage, $map, $i, $j);
         imagecopymerge($resultImage, $randomImageResource, $x, $y, 0, 0, $inputImageSize, $inputImageSize, 100);
         $images[$randomImageIndex]['occurences']++;
-        $lastImageIndex = $randomImageIndex;
+        $map[$i][$j] = $randomImageIndex;
     }
 }
 
 echo 'Saving...'.PHP_EOL;
 
-imagepng($resultImage, './banner.png');
+imagepng($resultImage, './banner2.png');
 
 foreach ($images as $image) {
     ImageDestroy($image['ressource']);
